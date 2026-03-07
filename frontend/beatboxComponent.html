@@ -2,359 +2,1611 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Canvas of Sound</title>
-    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Haptix - Live Audio Visualizer & Speech to Text</title>
+    
+    <!-- Fonts and Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- p5.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
-</head>
-<body>
-    <div id="beatboxComponent">
-        <div id="ui-layer">
-            <h1>Haptix</h1>
-            <button id="startBtn">Begin Experience</button>
-            <p id="status">Waiting for audio input...</p>
-            <div id="level-indicator" style="margin-top: 10px; font-size: 14px; color: #ccc;">
-                Bass: <span id="bass-value">0</span> | Level: <span id="current-level">1</span>/16 | Vibe: <span id="vibe-level">0</span>ms
-            </div>
-            <div id="vibration-support" style="font-size: 12px; margin-top: 5px; color: #888;">
-                Checking vibration support...
-            </div>
-        </div>
-        <div id="canvas-container"></div>
-    </div>
-
+    
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #9d4edd;
+            --primary-light: #c77dff;
+            --secondary: #ff0a54;
+            --bg-dark: #0b0c10;
+            --text-light: #f8fafc;
+            --text-muted: #94a3b8;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-blur: blur(12px);
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+        }
+
         body {
             margin: 0;
             padding: 0;
-            font-family: 'Segoe UI', Arial, sans-serif;
-            text-align: center;
-            background: #050505;
-            color: white;
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-light);
             overflow: hidden;
-            transition: background 0.1s ease;
+            transition: background-color 0.2s ease;
         }
 
-        #ui-layer {
-            position: absolute;
-            top: 20px;
-            width: 100%;
-            z-index: 10;
-            pointer-events: none;
-        }
-
-        button {
-            padding: 12px 25px;
-            font-size: 16px;
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 30px;
-            background: rgba(0, 195, 255, 0.2);
-            color: white;
-            cursor: pointer;
-            pointer-events: auto;
-            backdrop-filter: blur(5px);
-            transition: 0.3s;
-        }
-
-        button:hover {
-            background: #00c3ff;
-            box-shadow: 0 0 20px rgba(0, 195, 255, 0.6);
-        }
-
+        /* Canvas Container */
         #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100vw;
             height: 100vh;
+            z-index: 1;
+        }
+
+        /* UI Layer - All controls on top of canvas */
+        #ui-layer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: 10;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.5rem;
+            overflow-y: auto;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            pointer-events: auto;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .back-btn {
+            background: var(--glass-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--glass-border);
+            color: var(--text-light);
+            padding: 0.8rem 1.5rem;
+            border-radius: 50px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            text-decoration: none;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .back-btn i {
+            font-size: 1rem;
+            color: var(--primary-light);
+        }
+
+        .back-btn:hover {
+            background: rgba(157, 78, 221, 0.2);
+            border-color: var(--primary-light);
+            transform: translateX(-5px);
+        }
+
+        .mode-badge {
+            background: var(--glass-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--glass-border);
+            padding: 0.8rem 1.5rem;
+            border-radius: 50px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .mode-badge i {
+            font-size: 1rem;
+            color: #ff0a54;
+            animation: pulse 1.2s infinite;
+        }
+
+        /* Main Content Grid */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            width: 100%;
+            max-width: 1400px;
+            margin: 1rem auto;
+            pointer-events: auto;
+        }
+
+        /* Left Column - Voice to Text */
+        .voice-section {
+            background: var(--glass-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--glass-border);
+            border-radius: 30px;
+            padding: 1.5rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            color: var(--text-light);
+        }
+
+        .section-title i {
+            color: var(--primary-light);
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .status-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #6c757d;
+            transition: all 0.3s ease;
+        }
+
+        .status-indicator.listening {
+            background: var(--success);
+            box-shadow: 0 0 15px var(--success);
+            animation: pulse 1.5s infinite;
+        }
+
+        .status-indicator.processing {
+            background: var(--warning);
+            animation: pulse 1s infinite;
+        }
+
+        .status-indicator.error {
+            background: var(--danger);
+        }
+
+        .language-selector {
+            padding: 0.6rem 1rem;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            font-size: 0.9em;
+            cursor: pointer;
+            outline: none;
+            color: var(--text-light);
+            transition: all 0.3s ease;
+        }
+
+        .language-selector:hover {
+            border-color: var(--primary-light);
+        }
+
+        .language-selector option {
+            background: var(--bg-dark);
+            color: var(--text-light);
+        }
+
+        .voice-controls {
+            display: flex;
+            gap: 0.8rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .voice-btn {
+            padding: 0.8rem 1.2rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            flex: 1;
+            min-width: 100px;
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-light);
+            border: 1px solid var(--glass-border);
+        }
+
+        .voice-btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .voice-btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .voice-btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .voice-btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .voice-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .transcript-container {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 1.2rem;
+            margin-bottom: 1rem;
+            min-height: 150px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid var(--glass-border);
+        }
+
+        .final-text {
+            font-size: 1rem;
+            line-height: 1.5;
+            color: var(--text-light);
+        }
+
+        .final-text p {
+            margin-bottom: 8px;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+        }
+
+        .interim-transcript {
+            color: var(--text-muted);
+            font-style: italic;
+            margin-top: 8px;
+            padding: 10px;
+            background: rgba(157, 78, 221, 0.1);
+            border-radius: 10px;
+            min-height: 40px;
+            font-size: 0.95rem;
+        }
+
+        .voice-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.8rem;
+            margin-top: 1rem;
+        }
+
+        .voice-stat-item {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 0.8rem;
+            text-align: center;
+            border: 1px solid var(--glass-border);
+        }
+
+        .voice-stat-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.3rem;
+        }
+
+        .voice-stat-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--primary-light);
+        }
+
+        .history-container {
+            margin-top: 1rem;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        .history-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .history-item {
+            padding: 0.6rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+            margin-bottom: 0.3rem;
+            font-size: 0.85rem;
+            border-left: 3px solid var(--primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: var(--text-muted);
+        }
+
+        .history-item:hover {
+            transform: translateX(3px);
+            background: rgba(157, 78, 221, 0.2);
+            color: var(--text-light);
+        }
+
+        .error-message {
+            color: var(--danger);
+            padding: 8px;
+            background: rgba(220, 53, 69, 0.1);
+            border-radius: 8px;
+            margin-top: 8px;
+            display: none;
+            font-size: 0.9rem;
+        }
+
+        .error-message.show {
             display: block;
         }
-        
-        #level-indicator {
-            pointer-events: none;
-            background: rgba(0,0,0,0.5);
-            padding: 5px 15px;
+
+        /* Right Column - Visualizer Controls */
+        .visualizer-section {
+            background: var(--glass-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--glass-border);
+            border-radius: 30px;
+            padding: 1.5rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .status-card {
+            margin-bottom: 1.5rem;
+        }
+
+        #status {
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: var(--text-light);
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .level-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.8rem;
+            margin-top: 1rem;
+        }
+
+        .level-item {
+            background: rgba(0, 0, 0, 0.3);
             border-radius: 20px;
-            display: inline-block;
-            font-family: monospace;
-            border: 1px solid rgba(255,255,255,0.2);
-            backdrop-filter: blur(5px);
+            padding: 0.8rem;
+            border: 1px solid var(--glass-border);
         }
-        
-        #vibration-support {
-            pointer-events: none;
-            background: rgba(0,0,0,0.3);
-            padding: 3px 10px;
-            border-radius: 15px;
-            display: inline-block;
+
+        .level-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.3rem;
         }
-        
-        .vibration-supported {
-            color: #4aff4a !important;
+
+        .level-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-light);
+            line-height: 1;
         }
-        
-        .vibration-unsupported {
-            color: #ff4a4a !important;
+
+        .level-value span {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        .vibe-value {
+            color: var(--secondary);
+        }
+
+        .emoji-value {
+            font-size: 2rem !important;
+            line-height: 1;
+        }
+
+        .start-btn {
+            background: linear-gradient(270deg, var(--primary), var(--secondary), var(--primary));
+            background-size: 200% auto;
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 25px rgba(157, 78, 221, 0.3);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            pointer-events: auto;
+            width: 100%;
+            animation: gradientShift 4s ease infinite;
+        }
+
+        .start-btn:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 15px 35px rgba(255, 10, 84, 0.5), 0 0 30px rgba(157, 78, 221, 0.6);
+        }
+
+        .start-btn .record-dot {
+            color: #ff4a4a;
+            animation: pulse 1.2s infinite;
+        }
+
+        /* Bottom Bar */
+        .bottom-bar {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            pointer-events: auto;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+
+        .vibration-status {
+            background: var(--glass-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--glass-border);
+            padding: 0.7rem 1.2rem;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .vibration-status.supported {
+            color: #4aff4a;
+        }
+
+        .vibration-status.unsupported {
+            color: #ff4a4a;
+        }
+
+        .vibration-toggle {
+            background: var(--glass-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--glass-border);
+            color: var(--text-light);
+            padding: 0.7rem 1.2rem;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .vibration-toggle:hover {
+            background: rgba(157, 78, 221, 0.2);
+            border-color: var(--primary-light);
+        }
+
+        .vibration-toggle.enabled i {
+            color: #4aff4a;
+        }
+
+        .vibration-toggle.disabled i {
+            color: #ff4a4a;
+        }
+
+        /* Mic Permission Dialog */
+        .mic-permission {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--glass-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            z-index: 100;
+            display: none;
+            max-width: 400px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .mic-permission i {
+            font-size: 3rem;
+            color: var(--primary-light);
+            margin-bottom: 1rem;
+        }
+
+        .mic-permission h3 {
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .mic-permission p {
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+        }
+
+        .mic-permission button {
+            background: linear-gradient(270deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            padding: 0.8rem 2rem;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .mic-permission button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 20px rgba(157, 78, 221, 0.4);
+        }
+
+        /* Animations */
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.7; transform: scale(0.95); }
+            50% { opacity: 1; transform: scale(1.1); }
+            100% { opacity: 0.7; transform: scale(0.95); }
+        }
+
+        /* Hide elements */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            #ui-layer {
+                padding: 1rem;
+                position: relative;
+                height: auto;
+                min-height: 100vh;
+            }
+            
+            body {
+                overflow-y: auto;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .level-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .voice-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .bottom-bar {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .vibration-status, .vibration-toggle {
+                width: 100%;
+                justify-content: center;
+            }
         }
     </style>
+</head>
+<body>
+    <div id="canvas-container"></div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
-    
+    <!-- UI Layer -->
+    <div id="ui-layer">
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <button class="back-btn" onclick="window.location.href='index.html'">
+                <i class="fas fa-arrow-left"></i>
+                <span>Back to Home</span>
+            </button>
+
+            <div class="mode-badge">
+                <i class="fas fa-circle"></i>
+                <span>Live Recording Mode</span>
+            </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="main-grid">
+            <!-- Left Column - Visualizer Controls -->
+            <div class="visualizer-section">
+                <div class="section-title">
+                    <i class="fas fa-waveform"></i>
+                    <span>Audio Visualizer</span>
+                </div>
+
+                <div class="status-card">
+                    <div id="status">Ready to capture live audio</div>
+
+                    <div class="level-grid">
+                        <div class="level-item">
+                            <div class="level-label">Bass Level</div>
+                            <div class="level-value" id="bass-value">0</div>
+                        </div>
+                        <div class="level-item">
+                            <div class="level-label">Energy Level</div>
+                            <div class="level-value" id="current-level">1/<span>16</span></div>
+                        </div>
+                        <div class="level-item">
+                            <div class="level-label">Vibration</div>
+                            <div class="level-value vibe-value" id="vibe-level">0<span>ms</span></div>
+                        </div>
+                        <div class="level-item">
+                            <div class="level-label">Mood</div>
+                            <div class="level-value emoji-value" id="mood-emoji">😴</div>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="visualizerStartBtn" class="start-btn">
+                    <i class="fas fa-circle record-dot"></i>
+                    <span id="visualizerStartText">Begin Live Experience</span>
+                </button>
+            </div>
+
+            <!-- Right Column - Voice to Text -->
+            <div class="voice-section">
+                <div class="section-title">
+                    <i class="fas fa-microphone-alt"></i>
+                    <span>Voice to Text</span>
+                </div>
+
+                <div class="status-bar">
+                    <div class="status-info">
+                        <div class="status-indicator" id="voiceStatusIndicator"></div>
+                        <span id="voiceStatusText">Ready to listen</span>
+                    </div>
+                    <select class="language-selector" id="languageSelector">
+                        <option value="en-US">🇺🇸 English (US)</option>
+                        <option value="en-GB">🇬🇧 English (UK)</option>
+                        <option value="es-ES">🇪🇸 Spanish</option>
+                        <option value="fr-FR">🇫🇷 French</option>
+                        <option value="de-DE">🇩🇪 German</option>
+                        <option value="it-IT">🇮🇹 Italian</option>
+                        <option value="pt-PT">🇵🇹 Portuguese</option>
+                        <option value="ru-RU">🇷🇺 Russian</option>
+                        <option value="ja-JP">🇯🇵 Japanese</option>
+                        <option value="ko-KR">🇰🇷 Korean</option>
+                        <option value="zh-CN">🇨🇳 Chinese</option>
+                        <option value="hi-IN">🇮🇳 Hindi</option>
+                    </select>
+                </div>
+
+                <div class="voice-controls">
+                    <button class="voice-btn voice-btn-primary" id="voiceStartBtn" onclick="startVoiceListening()">
+                        <i class="fas fa-play"></i> Start
+                    </button>
+                    <button class="voice-btn voice-btn-secondary" id="voiceStopBtn" onclick="stopVoiceListening()" disabled>
+                        <i class="fas fa-stop"></i> Stop
+                    </button>
+                    <button class="voice-btn voice-btn-success" id="voiceCopyBtn" onclick="copyVoiceText()" disabled>
+                        <i class="fas fa-copy"></i> Copy
+                    </button>
+                    <button class="voice-btn" onclick="clearVoiceText()">
+                        <i class="fas fa-trash"></i> Clear
+                    </button>
+                </div>
+
+                <div class="transcript-container" id="transcriptContainer">
+                    <div class="final-text" id="finalVoiceText"></div>
+                </div>
+
+                <div class="interim-transcript" id="interimVoiceTranscript">
+                    Interim results will appear here...
+                </div>
+
+                <div class="error-message" id="voiceErrorMessage"></div>
+
+                <div class="voice-stats">
+                    <div class="voice-stat-item">
+                        <div class="voice-stat-label">Words</div>
+                        <div class="voice-stat-value" id="voiceWordCount">0</div>
+                    </div>
+                    <div class="voice-stat-item">
+                        <div class="voice-stat-label">Duration</div>
+                        <div class="voice-stat-value" id="voiceDuration">0:00</div>
+                    </div>
+                    <div class="voice-stat-item">
+                        <div class="voice-stat-label">Confidence</div>
+                        <div class="voice-stat-value" id="voiceConfidence">-</div>
+                    </div>
+                </div>
+
+                <div class="history-container">
+                    <div class="history-title">
+                        <i class="fas fa-history"></i>
+                        <span>Recent Transcripts</span>
+                    </div>
+                    <div id="voiceHistoryList"></div>
+                </div>
+
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem; text-align: center;">
+                    <i class="fas fa-info-circle"></i> Ctrl+Space to start/stop | Ctrl+C to copy
+                </div>
+            </div>
+
+            
+            
+        </div>
+
+        <!-- Bottom Bar -->
+        <div class="bottom-bar">
+            <div id="vibration-status" class="vibration-status">
+                <i class="fas fa-mobile-alt"></i>
+                <span id="vibration-text">Checking support...</span>
+            </div>
+
+            <button id="vibration-toggle" class="vibration-toggle enabled">
+                <i class="fas fa-bell"></i>
+                <span id="toggle-text">Vibration: ON</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Mic Permission Dialog -->
+    <div id="mic-permission" class="mic-permission">
+        <i class="fas fa-microphone"></i>
+        <h3>Microphone Access Required</h3>
+        <p>Haptix needs access to your microphone for both voice recognition and audio visualization. Please allow microphone access when prompted.</p>
+        <button onclick="requestAllMicPermissions()">Request Microphone Access</button>
+    </div>
+
     <script>
-        let audioContext, analyser, dataArray, started = false;
+        // ==================== GLOBAL STATE ====================
+        let audioContext, analyser, dataArray, visualizerStarted = false;
         let smoothBass = 0;
         let lastVibeTime = 0;
         let vibrationSupported = false;
-        let lastVibrationPattern = null;
         let vibrationEnabled = true;
+        let mediaStream = null;
+        let animationFrame;
+        
+        // Voice Recognition Variables
+        let voiceRecognition = null;
+        let isVoiceListening = false;
+        let finalVoiceTranscript = '';
+        let voiceStartTime = null;
+        let voiceTimerInterval = null;
+        let voiceTranscriptHistory = [];
 
-        // Check for vibration support
+        // Level calculation constants
+        const LEVELS = 16;
+        const BASS_BINS = 20;
+
+        // ==================== UI ELEMENTS ====================
+        // Voice elements
+        const voiceStatusIndicator = document.getElementById('voiceStatusIndicator');
+        const voiceStatusText = document.getElementById('voiceStatusText');
+        const voiceStartBtn = document.getElementById('voiceStartBtn');
+        const voiceStopBtn = document.getElementById('voiceStopBtn');
+        const voiceCopyBtn = document.getElementById('voiceCopyBtn');
+        const finalVoiceText = document.getElementById('finalVoiceText');
+        const interimVoiceTranscript = document.getElementById('interimVoiceTranscript');
+        const voiceErrorMessage = document.getElementById('voiceErrorMessage');
+        const languageSelector = document.getElementById('languageSelector');
+        const voiceWordCount = document.getElementById('voiceWordCount');
+        const voiceDuration = document.getElementById('voiceDuration');
+        const voiceConfidence = document.getElementById('voiceConfidence');
+        const voiceHistoryList = document.getElementById('voiceHistoryList');
+
+        // Visualizer elements
+        const statusEl = document.getElementById('status');
+        const bassValueEl = document.getElementById('bass-value');
+        const currentLevelEl = document.getElementById('current-level');
+        const vibeLevelEl = document.getElementById('vibe-level');
+        const moodEmojiEl = document.getElementById('mood-emoji');
+        const visualizerStartBtn = document.getElementById('visualizerStartBtn');
+        const visualizerStartText = document.getElementById('visualizerStartText');
+        const vibrationStatus = document.getElementById('vibration-status');
+        const vibrationText = document.getElementById('vibration-text');
+        const vibrationToggle = document.getElementById('vibration-toggle');
+        const toggleText = document.getElementById('toggle-text');
+        const micPermission = document.getElementById('mic-permission');
+
+        // Emoji array matching the 16 energy levels
+        const levelEmojis = [
+            "😴", "😌", "🙂", "😊", "🎵", "🎶", "🔊", "💃",
+            "🕺", "🔥", "⚡", "💥", "🤯", "🚀", "🌈", "🎉"
+        ];
+
+        // ==================== INITIALIZATION ====================
+        function initialize() {
+            checkVibrationSupport();
+            checkMicrophonePermission();
+            initializeVoiceRecognition();
+        }
+
+        // Initialize Speech Recognition
+        function initializeVoiceRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            
+            if (!SpeechRecognition) {
+                showVoiceError('Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari.');
+                voiceStartBtn.disabled = true;
+                languageSelector.disabled = true;
+                return;
+            }
+
+            voiceRecognition = new SpeechRecognition();
+            voiceRecognition.continuous = true;
+            voiceRecognition.interimResults = true;
+            voiceRecognition.maxAlternatives = 1;
+
+            // Voice Recognition Events
+            voiceRecognition.onstart = function() {
+                isVoiceListening = true;
+                updateVoiceUIForListening(true);
+                voiceStartTime = new Date();
+                startVoiceTimer();
+                updateVoiceStatus('Listening started...');
+            };
+
+            voiceRecognition.onend = function() {
+                if (isVoiceListening) {
+                    // Restart if it stopped but should be listening
+                    try {
+                        voiceRecognition.start();
+                    } catch (error) {
+                        console.error('Restart error:', error);
+                    }
+                } else {
+                    updateVoiceUIForListening(false);
+                    stopVoiceTimer();
+                    updateVoiceStatus('Listening stopped');
+                }
+            };
+
+            voiceRecognition.onerror = function(event) {
+                console.error('Recognition error:', event.error);
+                
+                switch(event.error) {
+                    case 'no-speech':
+                        showVoiceError('No speech detected. Please try again.');
+                        break;
+                    case 'audio-capture':
+                        showVoiceError('No microphone found or microphone is disabled.');
+                        break;
+                    case 'not-allowed':
+                        showVoiceError('Microphone access denied. Please allow microphone access.');
+                        break;
+                    case 'network':
+                        showVoiceError('Network error. Please check your connection.');
+                        break;
+                    default:
+                        showVoiceError(`Error: ${event.error}`);
+                }
+                
+                if (isVoiceListening) {
+                    stopVoiceListening();
+                }
+            };
+
+            voiceRecognition.onresult = function(event) {
+                let interim = '';
+                let finalResult = '';
+
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const result = event.results[i];
+                    const transcript = result[0].transcript;
+                    
+                    if (result.isFinal) {
+                        finalResult += transcript + ' ';
+                        updateVoiceConfidence(result[0].confidence);
+                        
+                        // Add to history
+                        addToVoiceHistory(transcript, result[0].confidence);
+                    } else {
+                        interim += transcript;
+                    }
+                }
+
+                if (finalResult) {
+                    finalVoiceTranscript += finalResult;
+                    updateFinalVoiceText(finalVoiceTranscript);
+                }
+
+                if (interim) {
+                    interimVoiceTranscript.textContent = interim;
+                } else {
+                    interimVoiceTranscript.textContent = 'Waiting for speech...';
+                }
+
+                updateVoiceWordCount();
+            };
+        }
+
+        // Check vibration support
         function checkVibrationSupport() {
-            const vibeDiv = document.getElementById('vibration-support');
             if ('vibrate' in navigator) {
                 vibrationSupported = true;
-                vibeDiv.innerHTML = '✅ Vibration SUPPORTED - Device will vibrate!';
-                vibeDiv.className = 'vibration-supported';
+                vibrationStatus.classList.add('supported');
+                vibrationStatus.classList.remove('unsupported');
+                vibrationText.textContent = 'Vibration Supported';
                 
-                // Test vibration pattern
+                // Test vibration
                 navigator.vibrate(50);
-                setTimeout(() => {
-                    navigator.vibrate(0); // Stop vibration
-                }, 100);
+                setTimeout(() => navigator.vibrate(0), 100);
             } else {
                 vibrationSupported = false;
-                vibeDiv.innerHTML = '❌ Vibration NOT supported on this device';
-                vibeDiv.className = 'vibration-unsupported';
+                vibrationStatus.classList.add('unsupported');
+                vibrationStatus.classList.remove('supported');
+                vibrationText.textContent = 'Vibration Not Supported';
+                vibrationToggle.style.display = 'none';
             }
         }
 
-        document.getElementById("startBtn").addEventListener("click", startAudio);
-
-        async function startAudio() {
-            if (started) return;
+        // Check microphone permission
+        async function checkMicrophonePermission() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                const source = audioContext.createMediaStreamSource(stream);
-                analyser = audioContext.createAnalyser();
+                const permissionStatus = await navigator.permissions.query({ name: 'microphone' });
                 
-                analyser.fftSize = 2048; 
+                if (permissionStatus.state === 'granted') {
+                    micPermission.style.display = 'none';
+                } else if (permissionStatus.state === 'prompt') {
+                    micPermission.style.display = 'block';
+                } else {
+                    micPermission.style.display = 'block';
+                    statusEl.textContent = 'Microphone access denied. Please enable in settings.';
+                    statusEl.style.color = '#ff4a4a';
+                }
+            } catch (error) {
+                micPermission.style.display = 'block';
+            }
+        }
+
+        async function requestAllMicPermissions() {
+            micPermission.style.display = 'none';
+            await startVisualizerAudio();
+        }
+
+        // ==================== VOICE FUNCTIONS ====================
+        function updateVoiceUIForListening(listening) {
+            if (listening) {
+                voiceStatusIndicator.className = 'status-indicator listening';
+                voiceStatusText.textContent = 'Listening...';
+                voiceStartBtn.disabled = true;
+                voiceStopBtn.disabled = false;
+                voiceCopyBtn.disabled = false;
+                languageSelector.disabled = true;
+            } else {
+                voiceStatusIndicator.className = 'status-indicator';
+                voiceStatusText.textContent = 'Ready to listen';
+                voiceStartBtn.disabled = false;
+                voiceStopBtn.disabled = true;
+                languageSelector.disabled = false;
+            }
+        }
+
+        function updateFinalVoiceText(text) {
+            const paragraphs = text.split('\n').filter(p => p.trim());
+            finalVoiceText.innerHTML = paragraphs.map(p => `<p>${p}</p>`).join('');
+            finalVoiceText.scrollTop = finalVoiceText.scrollHeight;
+        }
+
+        function updateVoiceWordCount() {
+            const words = finalVoiceTranscript.trim().split(/\s+/).filter(w => w);
+            voiceWordCount.textContent = words.length;
+        }
+
+        function updateVoiceConfidence(conf) {
+            voiceConfidence.textContent = Math.round(conf * 100) + '%';
+        }
+
+        function updateVoiceStatus(msg) {
+            console.log(msg);
+            voiceStatusIndicator.className = 'status-indicator processing';
+            setTimeout(() => {
+                if (isVoiceListening) {
+                    voiceStatusIndicator.className = 'status-indicator listening';
+                }
+            }, 1000);
+        }
+
+        function startVoiceTimer() {
+            if (voiceTimerInterval) clearInterval(voiceTimerInterval);
+            voiceTimerInterval = setInterval(() => {
+                if (voiceStartTime) {
+                    const diff = new Date() - voiceStartTime;
+                    const minutes = Math.floor(diff / 60000);
+                    const seconds = Math.floor((diff % 60000) / 1000);
+                    voiceDuration.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                }
+            }, 1000);
+        }
+
+        function stopVoiceTimer() {
+            if (voiceTimerInterval) {
+                clearInterval(voiceTimerInterval);
+                voiceTimerInterval = null;
+            }
+        }
+
+        function showVoiceError(msg) {
+            voiceErrorMessage.textContent = msg;
+            voiceErrorMessage.classList.add('show');
+            setTimeout(() => {
+                voiceErrorMessage.classList.remove('show');
+            }, 5000);
+        }
+
+        function addToVoiceHistory(text, conf) {
+            const historyItem = {
+                text: text,
+                confidence: conf,
+                timestamp: new Date().toLocaleTimeString()
+            };
+            
+            voiceTranscriptHistory.unshift(historyItem);
+            if (voiceTranscriptHistory.length > 10) voiceTranscriptHistory.pop();
+            
+            updateVoiceHistoryDisplay();
+        }
+
+        function updateVoiceHistoryDisplay() {
+            voiceHistoryList.innerHTML = voiceTranscriptHistory.map(item => `
+                <div class="history-item" onclick="useVoiceHistoryText('${item.text.replace(/'/g, "\\'")}')">
+                    <strong>${item.timestamp}</strong> - ${item.text.substring(0, 40)}${item.text.length > 40 ? '...' : ''} 
+                    (${Math.round(item.confidence * 100)}%)
+                </div>
+            `).join('');
+        }
+
+        // Voice Action Functions
+        function startVoiceListening() {
+            if (!voiceRecognition) return;
+            
+            voiceRecognition.lang = languageSelector.value;
+            finalVoiceTranscript = '';
+            finalVoiceText.innerHTML = '';
+            interimVoiceTranscript.textContent = 'Initializing...';
+            voiceErrorMessage.classList.remove('show');
+            
+            try {
+                voiceRecognition.start();
+            } catch (error) {
+                console.error('Start error:', error);
+                showVoiceError('Failed to start listening. Please try again.');
+            }
+        }
+
+        function stopVoiceListening() {
+            if (voiceRecognition && isVoiceListening) {
+                isVoiceListening = false;
+                voiceRecognition.stop();
+                updateVoiceUIForListening(false);
+            }
+        }
+
+        function copyVoiceText() {
+            if (finalVoiceTranscript) {
+                navigator.clipboard.writeText(finalVoiceTranscript).then(() => {
+                    voiceCopyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                    setTimeout(() => {
+                        voiceCopyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy';
+                    }, 2000);
+                }).catch(() => {
+                    showVoiceError('Failed to copy text');
+                });
+            }
+        }
+
+        function clearVoiceText() {
+            finalVoiceTranscript = '';
+            finalVoiceText.innerHTML = '';
+            updateVoiceWordCount();
+            voiceDuration.textContent = '0:00';
+            voiceConfidence.textContent = '-';
+            voiceStartTime = null;
+        }
+
+        function useVoiceHistoryText(text) {
+            finalVoiceTranscript += text + ' ';
+            updateFinalVoiceText(finalVoiceTranscript);
+            updateVoiceWordCount();
+        }
+
+        // ==================== VISUALIZER FUNCTIONS ====================
+        async function startVisualizerAudio() {
+            if (visualizerStarted) return;
+            
+            try {
+                statusEl.textContent = 'Requesting microphone access...';
+                
+                // Close existing context
+                if (audioContext) {
+                    await audioContext.close();
+                }
+                
+                // Get microphone stream
+                mediaStream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        echoCancellation: false,
+                        noiseSuppression: false,
+                        autoGainControl: false,
+                        latency: 0
+                    } 
+                });
+                
+                // Create new audio context
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                await audioContext.resume();
+                
+                // Create source from microphone
+                const source = audioContext.createMediaStreamSource(mediaStream);
+                
+                // Setup analyser
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 2048;
+                analyser.smoothingTimeConstant = 0.8;
+                
                 source.connect(analyser);
                 
                 dataArray = new Uint8Array(analyser.frequencyBinCount);
-                document.getElementById("status").innerText = "Sound Active";
-                document.getElementById("startBtn").style.display = "none";
-                started = true;
                 
-                // Check vibration support on start
-                checkVibrationSupport();
+                // Update UI
+                visualizerStarted = true;
+                micPermission.style.display = 'none';
+                visualizerStartBtn.style.opacity = '0.5';
+                visualizerStartBtn.style.pointerEvents = 'none';
+                statusEl.textContent = '🎤 Live audio active - Make some noise!';
+                statusEl.style.color = 'var(--primary-light)';
+                
+                // Start visualization loop
+                visualize();
+                
             } catch (err) {
-                document.getElementById("status").innerText = "Mic access denied.";
+                console.error('Error starting audio:', err);
+                statusEl.textContent = 'Error: ' + err.message;
+                statusEl.style.color = '#ff4a4a';
+                
+                if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                    micPermission.style.display = 'block';
+                }
             }
         }
 
-        function setup() {
-            let cnv = createCanvas(windowWidth, windowHeight);
-            cnv.parent("canvas-container");
-            colorMode(RGB);
+        function visualize() {
+            if (!visualizerStarted || !analyser || !dataArray) return;
             
-            // Check vibration support on load
-            setTimeout(checkVibrationSupport, 1000);
+            // Get frequency data
+            analyser.getByteFrequencyData(dataArray);
+            
+            // Calculate bass (low frequencies)
+            let bassSum = 0;
+            for (let i = 0; i < BASS_BINS; i++) {
+                bassSum += dataArray[i];
+            }
+            let averageBass = bassSum / BASS_BINS;
+            
+            // Smooth the bass values
+            smoothBass = lerp(smoothBass, averageBass, 0.15);
+            
+            // Calculate level (1-16)
+            let level = calculateLevel(smoothBass);
+            
+            // Calculate vibration intensity
+            let vibeIntensity = mapLevelToVibration(level);
+            
+            // Apply vibration
+            applyVibration(vibeIntensity);
+            
+            // Update UI
+            updateVisualizerUI(smoothBass, level, vibeIntensity);
+            
+            // Continue loop
+            requestAnimationFrame(visualize);
+        }
+
+        function calculateLevel(bass) {
+            let normalizedBass = bass / 255;
+            let curvedBass = Math.pow(normalizedBass, 0.7);
+            let level = Math.floor(curvedBass * LEVELS) + 1;
+            return Math.min(level, LEVELS);
+        }
+
+        function mapLevelToVibration(level) {
+            return Math.floor((level / LEVELS) * 100);
+        }
+
+function applyVibration(intensity) {
+    if (!vibrationSupported || !vibrationEnabled || !visualizerStarted) return;
+    
+    let now = Date.now();
+    
+    // Get current beat detection from audio data
+    if (!analyser || !dataArray) return;
+    
+    // Get current frequency data for better beat detection
+    analyser.getByteFrequencyData(dataArray);
+    
+    // Calculate beat strength across different frequency ranges
+    let bassBeat = 0;
+    let midBeat = 0;
+    let trebleBeat = 0;
+    
+    // Bass frequencies (20-200Hz) - first 20 bins
+    for (let i = 0; i < 20; i++) {
+        bassBeat += dataArray[i];
+    }
+    bassBeat = bassBeat / 20;
+    
+    // Mid frequencies (200Hz-2kHz) - next 60 bins
+    for (let i = 20; i < 80; i++) {
+        midBeat += dataArray[i];
+    }
+    midBeat = midBeat / 60;
+    
+    // Treble frequencies (2kHz-20kHz) - remaining bins
+    for (let i = 80; i < 150; i++) {
+        trebleBeat += dataArray[i];
+    }
+    trebleBeat = trebleBeat / 70;
+    
+    // Calculate rate of change (beat detection)
+    // Store previous values for comparison
+    if (!window.prevBassBeat) window.prevBassBeat = bassBeat;
+    if (!window.prevMidBeat) window.prevMidBeat = midBeat;
+    if (!window.beatThreshold) window.beatThreshold = 30;
+    
+    // Detect rapid increases (beats)
+    let bassIncrease = bassBeat - window.prevBassBeat;
+    let midIncrease = midBeat - window.prevMidBeat;
+    
+    // Update previous values
+    window.prevBassBeat = bassBeat * 0.7 + window.prevBassBeat * 0.3; // Smooth
+    window.prevMidBeat = midBeat * 0.7 + window.prevMidBeat * 0.3;
+    
+    // Beat detection - only vibrate on significant increases
+    let isBeat = (bassIncrease > window.beatThreshold) || 
+                 (midIncrease > window.beatThreshold * 1.5) ||
+                 (bassBeat > 200 && midBeat > 150); // Strong continuous beat
+    
+    // Debounce - prevent too many vibrations
+    if (now - lastVibeTime < 200) return;
+    
+    if (isBeat) {
+        // Calculate vibration intensity based on beat strength
+        let beatStrength = Math.max(
+            bassIncrease > 0 ? bassIncrease / 100 : 0,
+            midIncrease > 0 ? midIncrease / 150 : 0,
+            (bassBeat + midBeat) / 400
+        );
+        
+        // Cap and normalize intensity
+        beatStrength = Math.min(1, Math.max(0.3, beatStrength));
+        
+        // Create pattern based on beat characteristics
+        let pattern = [];
+        
+        if (bassIncrease > window.beatThreshold * 2 || bassBeat > 220) {
+            // Heavy bass hit - strong thump
+            pattern = [
+                Math.round(100 * beatStrength),  // Strong initial pulse
+                30,                              // Short pause
+                Math.round(50 * beatStrength)    // Echo pulse
+            ];
+        } else if (midIncrease > window.beatThreshold * 2) {
+            // Snare/clap hit - sharp vibration
+            pattern = [
+                Math.round(60 * beatStrength),   // Sharp pulse
+                20,                               // Very short pause
+                Math.round(30 * beatStrength)     // Lighter follow-up
+            ];
+        } else if (bassBeat > 200 && midBeat > 150) {
+            // Continuous heavy beat - rhythmic pattern
+            let baseTime = Math.round(80 * (bassBeat / 255));
+            pattern = [
+                baseTime,                         // First pulse
+                40,                                // Pause
+                baseTime,                          // Second pulse
+                40,                                // Pause
+                Math.round(baseTime * 0.7)         // Third pulse (lighter)
+            ];
+        } else {
+            // Regular beat - single pulse
+            pattern = [Math.round(70 * beatStrength)];
+        }
+        
+        // Apply the vibration pattern
+        navigator.vibrate(pattern);
+        lastVibeTime = now;
+        
+        // Calculate total vibration time for display
+        let totalTime = pattern.reduce((a, b) => a + b, 0);
+        vibeLevelEl.innerHTML = totalTime + '<span>ms</span>';
+        
+        // Visual feedback for beat
+        document.body.style.transform = 'scale(1.01)';
+        setTimeout(() => {
+            document.body.style.transform = 'scale(1)';
+        }, 100);
+    } else {
+        // No beat - ensure vibration is stopped
+        navigator.vibrate(0);
+        
+        // Gradually decrease vibe level display
+        let currentVibe = parseInt(vibeLevelEl.innerHTML) || 0;
+        if (currentVibe > 0) {
+            vibeLevelEl.innerHTML = Math.max(0, currentVibe - 50) + '<span>ms</span>';
+        }
+    }
+}
+
+        function updateVisualizerUI(bass, level, vibeIntensity) {
+            bassValueEl.textContent = Math.round(bass);
+            currentLevelEl.innerHTML = level + '/<span>16</span>';
+            
+            if (moodEmojiEl) {
+                moodEmojiEl.textContent = levelEmojis[level - 1];
+            }
+            
+            updateBackgroundColor(level);
+        }
+
+        function updateBackgroundColor(level) {
+            const colors = [
+                "#0b0c10", "#0f0f2a", "#13133a", "#17174a",
+                "#1f1f5a", "#2a2a6a", "#2a3a7a", "#2a4a8a",
+                "#2a5a9a", "#3a6a9a", "#4a7a8a", "#5a8a7a",
+                "#7a9a6a", "#9aaa5a", "#ca9a4a", "#ff3a3a"
+            ];
+            
+            let colorIndex = Math.min(level - 1, colors.length - 1);
+            document.body.style.backgroundColor = colors[colorIndex];
+            
+            statusEl.style.color = colors[colorIndex];
+            statusEl.style.textShadow = `0 0 15px ${colors[colorIndex]}`;
+            
+            if (moodEmojiEl) {
+                moodEmojiEl.style.color = colors[colorIndex];
+            }
+        }
+
+        // ==================== P5.js VISUALIZER ====================
+        function setup() {
+            let canvas = createCanvas(windowWidth, windowHeight);
+            canvas.parent('canvas-container');
+            colorMode(RGB);
+            frameRate(30);
+            
+            // Initialize
+            initialize();
         }
 
         function windowResized() {
             resizeCanvas(windowWidth, windowHeight);
         }
 
-        function drawVisualizer() {
-            noStroke();
-            
-            let totalBars = Math.floor(dataArray.length * 0.4);
-
-            for (let i = 0; i < totalBars; i++) {
-                let val = dataArray[i];
-                let h = map(val, 0, 255, 2, height * 0.8);
-
-                let x = map(Math.pow(i, 0.8), 0, Math.pow(totalBars, 0.8), 0, width);
-                let barWidth = (width / totalBars) * 2;
-
-                let r = map(i, 0, totalBars, 0, 150);
-                let g = map(val, 0, 255, 50, 255);
-                let b = map(i, 0, totalBars, 255, 100);
-
-                fill(r, g, b, 200);
-                rect(x, height - h, barWidth, h, 20);
-                
-                fill(r, g, b, 30);
-                rect(x, height - h, barWidth, -h * 0.2, 20);
-            }
-        }
-
-        function applyVibration(intensity) {
-            if (!vibrationSupported || !vibrationEnabled || !started) return;
-            
-            // Don't vibrate too frequently (max every 100ms)
-            let now = Date.now();
-            if (now - lastVibeTime < 100) return;
-            
-            // Calculate vibration pattern based on intensity (0-100)
-            // Using patterns for different intensities
-            
-            let pattern;
-            
-            if (intensity < 10) {
-                // Too low to vibrate
-                return;
-            }
-            else if (intensity < 30) {
-                // Subtle: short single pulse
-                pattern = [30];
-            }
-            else if (intensity < 50) {
-                // Low: double pulse
-                pattern = [50, 30, 50];
-            }
-            else if (intensity < 70) {
-                // Medium: triple pulse
-                pattern = [80, 40, 80, 40, 80];
-            }
-            else if (intensity < 90) {
-                // High: long vibration with pulses
-                pattern = [150, 50, 150, 50, 150];
-            }
-            else {
-                // Extreme: continuous intense vibration
-                pattern = [300, 100, 300, 100, 300, 100, 300];
-            }
-            
-            // Apply the vibration pattern
-            navigator.vibrate(pattern);
-            lastVibeTime = now;
-            
-            // Store last pattern for display
-            lastVibrationPattern = pattern;
-            
-            // Update display with total vibration time
-            let totalTime = pattern.reduce((a, b) => a + b, 0);
-            document.getElementById('vibe-level').innerText = totalTime;
-        }
-
         function draw() {
-            clear(); 
+            clear();
             
-            if (!started || !analyser) {
-                background(10);
+            if (!visualizerStarted || !analyser || !dataArray) {
+                // Draw idle animation
+                drawIdleState();
                 return;
             }
-
+            
+            // Get fresh frequency data
             analyser.getByteFrequencyData(dataArray);
-
-            // Calculate average bass (first 15 bins for more bass response)
-            let bassSum = 0;
-            for(let i = 0; i < 15; i++) {
-                bassSum += dataArray[i];
-            }
-            let averageBass = bassSum / 15;
-            
-            // Smooth the bass values to prevent jumping
-            smoothBass = lerp(smoothBass, averageBass, 0.3);
-            
-            // Enhanced scaling for more bass response
-            let normalizedBass = smoothBass / 255;
-            let enhancedBass = Math.pow(normalizedBass, 0.7) * 255;
-            
-            // Calculate vibration intensity (0-100)
-            let vibeIntensity = map(enhancedBass, 0, 255, 0, 100);
-            
-            // Apply physical vibration
-            applyVibration(vibeIntensity);
-            
-            // Handle background color
-            handleMoodEffects(enhancedBass, averageBass);
             
             // Draw visualizer
-            drawVisualizer();
-            
-            // Update display values
-            document.getElementById('bass-value').innerText = Math.round(averageBass);
-            let level = getColorLevel(enhancedBass);
-            document.getElementById('current-level').innerText = level;
+            drawFrequencyBars();
         }
 
-        function getColorLevel(bass) {
-            if (bass < 16) return 1;
-            else if (bass < 32) return 2;
-            else if (bass < 48) return 3;
-            else if (bass < 64) return 4;
-            else if (bass < 80) return 5;
-            else if (bass < 96) return 6;
-            else if (bass < 112) return 7;
-            else if (bass < 128) return 8;
-            else if (bass < 144) return 9;
-            else if (bass < 160) return 10;
-            else if (bass < 176) return 11;
-            else if (bass < 192) return 12;
-            else if (bass < 208) return 13;
-            else if (bass < 224) return 14;
-            else if (bass < 240) return 15;
-            else return 16;
+        function drawIdleState() {
+            let time = millis() / 1000;
+            let pulse = sin(time * 2) * 0.1 + 0.9;
+            
+            for (let i = 0; i < 5; i++) {
+                let alpha = 50 * pulse * (1 - i/5);
+                let size = 100 + i * 50;
+                
+                fill(157, 78, 221, alpha);
+                noStroke();
+                circle(width/2, height/2, size);
+            }
+            
+            fill(255, 255, 255, 100);
+            noStroke();
+            textAlign(CENTER, CENTER);
+            textSize(16);
+            textFont('Inter');
+            text('Click "Begin Live Experience" to start', width/2, height/2 + 100);
         }
 
-        function handleMoodEffects(scaledBass, originalBass) {
-            const body = document.body;
+        function drawFrequencyBars() {
+            noStroke();
             
-            const colors = [
-                "#050505", "#0a0a3a", "#1a1a5a", "#2a2a7a",
-                "#2a3a9a", "#2a4a9a", "#2a5a8a", "#2a6a7a",
-                "#3a7a6a", "#4a8a5a", "#6a9a4a", "#8aaa3a",
-                "#aaba2a", "#ca9a2a", "#ea6a2a", "#ff3a3a"
-            ];
+            let barCount = Math.floor(dataArray.length * 0.3);
+            let barWidth = width / barCount;
             
-            let colorIndex;
-            if (scaledBass < 16) colorIndex = 0;
-            else if (scaledBass < 32) colorIndex = 1;
-            else if (scaledBass < 48) colorIndex = 2;
-            else if (scaledBass < 64) colorIndex = 3;
-            else if (scaledBass < 80) colorIndex = 4;
-            else if (scaledBass < 96) colorIndex = 5;
-            else if (scaledBass < 112) colorIndex = 6;
-            else if (scaledBass < 128) colorIndex = 7;
-            else if (scaledBass < 144) colorIndex = 8;
-            else if (scaledBass < 160) colorIndex = 9;
-            else if (scaledBass < 176) colorIndex = 10;
-            else if (scaledBass < 192) colorIndex = 11;
-            else if (scaledBass < 208) colorIndex = 12;
-            else if (scaledBass < 224) colorIndex = 13;
-            else if (scaledBass < 240) colorIndex = 14;
-            else colorIndex = 15;
+            for (let i = 0; i < barCount; i++) {
+                let value = dataArray[i];
+                let barHeight = map(value, 0, 255, 5, height * 0.6);
+                let x = i * barWidth;
+                let y = height - barHeight;
+                
+                let r = map(i, 0, barCount, 100, 255);
+                let g = map(value, 0, 255, 50, 200);
+                let b = map(i, 0, barCount, 255, 100);
+                
+                fill(r, g, b, 200);
+                rect(x, y, barWidth - 2, barHeight, 10);
+                
+                fill(r, g, b, 30);
+                rect(x, y - 10, barWidth - 2, 10, 5);
+                
+                if (value > 200) {
+                    fill(255, 255, 255, 100);
+                    rect(x, y - 3, barWidth - 2, 3);
+                }
+            }
             
-            body.style.backgroundColor = colors[colorIndex];
-            
-            // Update UI elements
-            document.getElementById("status").style.color = colors[colorIndex];
-            document.getElementById("status").style.textShadow = `0 0 15px ${colors[colorIndex]}`;
-            document.getElementById("level-indicator").style.borderColor = colors[colorIndex];
-            document.getElementById("current-level").style.color = colors[colorIndex];
-            
-            // Update button glow if visible
-            const startBtn = document.getElementById("startBtn");
-            if (startBtn.style.display !== "none") {
-                startBtn.style.boxShadow = `0 0 ${scaledBass/10}px ${colors[colorIndex]}`;
+            if (smoothBass > 0) {
+                let ringSize = map(smoothBass, 0, 255, 100, 300);
+                let alpha = map(smoothBass, 0, 255, 0, 100);
+                
+                fill(157, 78, 221, alpha);
+                noStroke();
+                circle(width/2, height/2, ringSize);
             }
         }
 
-        // Clean up vibration when page is hidden
-        document.addEventListener('visibilitychange', function() {
-            if (document.hidden && vibrationSupported) {
-                navigator.vibrate(0); // Stop vibration
+        // ==================== UTILITY FUNCTIONS ====================
+        function lerp(start, end, amount) {
+            return (1 - amount) * start + amount * end;
+        }
+
+        // ==================== EVENT LISTENERS ====================
+        visualizerStartBtn.addEventListener('click', startVisualizerAudio);
+
+        vibrationToggle.addEventListener('click', () => {
+            vibrationEnabled = !vibrationEnabled;
+            
+            if (!vibrationEnabled && vibrationSupported) {
+                navigator.vibrate(0);
+            }
+            
+            if (vibrationEnabled) {
+                vibrationToggle.classList.remove('disabled');
+                vibrationToggle.classList.add('enabled');
+                toggleText.textContent = 'Vibration: ON';
+            } else {
+                vibrationToggle.classList.remove('enabled');
+                vibrationToggle.classList.add('disabled');
+                toggleText.textContent = 'Vibration: OFF';
             }
         });
 
-        // Add toggle button for vibration (optional)
-        window.toggleVibration = function() {
-            vibrationEnabled = !vibrationEnabled;
-            if (!vibrationEnabled && vibrationSupported) {
-                navigator.vibrate(0); // Stop any ongoing vibration
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === ' ') {
+                e.preventDefault();
+                if (isVoiceListening) {
+                    stopVoiceListening();
+                } else {
+                    startVoiceListening();
+                }
+            } else if (e.ctrlKey && e.key === 'c') {
+                e.preventDefault();
+                copyVoiceText();
             }
-            document.getElementById('vibration-support').innerHTML = 
-                vibrationEnabled ? '✅ Vibration ENABLED' : '❌ Vibration DISABLED';
-        };
+        });
+
+        // Stop vibration when page is hidden
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && vibrationSupported) {
+                navigator.vibrate(0);
+            }
+        });
+
+        // Clean up on page unload
+        window.addEventListener('beforeunload', () => {
+            if (vibrationSupported) {
+                navigator.vibrate(0);
+            }
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+            }
+            if (animationFrame) {
+                cancelAnimationFrame(animationFrame);
+            }
+            if (voiceTimerInterval) {
+                clearInterval(voiceTimerInterval);
+            }
+            if (isVoiceListening && voiceRecognition) {
+                voiceRecognition.stop();
+            }
+        });
+
+        // Make functions globally available
+        window.startVoiceListening = startVoiceListening;
+        window.stopVoiceListening = stopVoiceListening;
+        window.copyVoiceText = copyVoiceText;
+        window.clearVoiceText = clearVoiceText;
+        window.useVoiceHistoryText = useVoiceHistoryText;
+        window.requestAllMicPermissions = requestAllMicPermissions;
     </script>
 </body>
 </html>

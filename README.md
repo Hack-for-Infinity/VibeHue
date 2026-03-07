@@ -87,7 +87,32 @@ This creates a barrier that prevents many people from fully participating in one
 
 ## 🏗️ System Architecture / Design
 
-*Describe or diagram how your system is structured. What are the main components and how do they interact?*
+![Screenshot](/System_Architecture_Haptix.png)
+
+The system is designed to convert audio input into visual and haptic feedback, enabling Deaf and Hard-of-Hearing users to experience music through vibrations and visualizations.
+
+### 1. Input Layer
+The web application provides two ways to input audio:
+
+- **Audio Upload** – Users can upload an `.mp3` file directly from their device.
+- **Live Concert Mode** – Users can capture live audio through the microphone for real-time processing.
+
+### 2. Processing Layer
+The uploaded or live audio is sent to the internal processing module where the following operations occur:
+
+1. **Audio Detection** – The system captures the audio signal.
+2. **Frequency Analysis** – Audio is analyzed using signal processing techniques.
+3. **Beat Detection** – The system identifies rhythm patterns, beats, and intensity.
+4. **Data Transformation** – The extracted audio features are converted into visualization parameters.
+
+### 3. Output Layer
+The processed data is used to generate accessible feedback:
+
+- **Visualizations** – Animated graphics representing beats and intensity.
+- **Color-based Effects** – Dynamic color changes based on audio frequency and amplitude.
+- **Real-Time Animations** – Interactive visuals for live concert mode.
+
+This architecture enables an **accessible music experience** by translating audio signals into visual and sensory feedback.
 
 ---
 
