@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Haptix</title>
+  <meta name="description"
+    content="Experience music through visuals and vibrations. Designed for Deaf and Hard-of-Hearing users.">
+  <!-- Load minimalist font awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <div class="wrapper">
+    <header>
+      <h1>Haptix</h1>
+      <p class="tagline">Experience music through visuals and vibrations.</p>
+    </header>
+
+    <main>
+      <section class="action-section" aria-label="Main Actions">
+
+        <!-- Upload Audio Card -->
+        <article class="action-card" aria-labelledby="upload-heading">
+          <i class="fas fa-cloud-upload-alt card-icon" aria-hidden="true"></i>
+          <h2 id="upload-heading" class="card-title">Upload Audio</h2>
+          <p class="card-desc">Select or drop an MP3, WAV, or OGG file to start the visualization journey.</p>
+
+          <label class="drop-zone" id="drop-zone" for="audio-upload" aria-label="Drop area for audio file">
+            <i class="fas fa-file-audio" style="font-size: 2.2rem; margin-bottom: 0.8rem; opacity: 0.6;"
+              aria-hidden="true"></i>
+            <span style="font-size: 0.95rem; color: #cbd5e1;">Drag & drop your file here<br>or click to browse</span>
+            <input type="file" id="audio-upload" class="hidden-input" accept=".mp3,.wav,.ogg"
+              aria-label="Upload Audio File Button">
+          </label>
+          <div id="file-name" class="selected-file-name" aria-live="polite"></div>
+        </article>
+
+        <!-- Live Recording Card -->
+        <article class="action-card" aria-labelledby="live-heading">
+          <i class="fas fa-microphone-alt card-icon" aria-hidden="true"></i>
+          <h2 id="live-heading" class="card-title">Live Recording</h2>
+          <p class="card-desc">Use your microphone to capture real-time audio and feel the vibrations instantly.</p>
+
+          <button id="btn-live-rec" class="btn-primary" aria-label="Start Live Recording Navigation">
+            <i class="fas fa-circle" style="color: #ffb3c6; font-size: 0.8rem;"></i>
+            Start Recording
+          </button>
+        </article>
+
+      </section>
+    </main>
+
+    <footer>
+      <div class="footer-content">
+        <p class="footer-mission">Making music experiences accessible for Deaf and Hard-of-Hearing users.</p>
+        <div class="footer-tech">
+          <span class="tech-badge" aria-label="HTML5"><i class="fab fa-html5"></i> HTML5</span>
+          <span class="tech-badge" aria-label="CSS3"><i class="fab fa-css3-alt"></i> CSS3</span>
+          <span class="tech-badge" aria-label="JavaScript"><i class="fab fa-js"></i> Vanilla JS</span>
+          <span class="tech-badge" aria-label="Web Audio API"><i class="fas fa-wave-square"></i> Web Audio API</span>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+
+</html>
