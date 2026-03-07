@@ -743,37 +743,39 @@
             return Math.floor((level / LEVELS) * 100);
         }
 
-        function applyVibration(intensity) {
-            if (!vibrationSupported || !vibrationEnabled || !started) return;
-            
-            let now = Date.now();
-            if (now - lastVibeTime < 100) return;
-            
-            let pattern;
-            
-            if (intensity < 10) {
-                return; // Too low to vibrate
-            } else if (intensity < 25) {
-                pattern = [30]; // Short pulse
-            } else if (intensity < 40) {
-                pattern = [50, 30, 50]; // Double pulse
-            } else if (intensity < 55) {
-                pattern = [80, 40, 80, 40, 80]; // Triple pulse
-            } else if (intensity < 70) {
-                pattern = [120, 50, 120, 50, 120]; // Strong pulses
-            } else if (intensity < 85) {
-                pattern = [200, 60, 200, 60, 200, 60, 200]; // Intense
-            } else {
-                pattern = [300, 80, 300, 80, 300, 80, 300, 80, 300]; // Maximum
-            }
-            
-            navigator.vibrate(pattern);
-            lastVibeTime = now;
-            
-            // Update vibration time display
-            let totalTime = pattern.reduce((a, b) => a + b, 0);
-            vibeLevelEl.innerHTML = totalTime + '<span>ms</span>';
-        }
+function applyVibration(intensity) {
+    if (!vibrationSupported || !vibrationEnabled || !started) return;
+
+    let now = Date.now();
+
+    // Bigger cooldown so vibration doesn't happen continuously
+    if (now - lastVibeTime < 600) return;
+
+    let pattern;
+
+    // Ignore weak signals
+    if (intensity < 40) {
+        return;
+    } 
+    else if (intensity < 60) {
+        pattern = [50]; // light beat
+    } 
+    else if (intensity < 75) {
+        pattern = [80, 50, 80]; // medium beat
+    } 
+    else if (intensity < 90) {
+        pattern = [120, 60, 120]; // strong beat
+    } 
+    else {
+        pattern = [180, 80, 180, 80]; // very strong beat
+    }
+
+    navigator.vibrate(pattern);
+    lastVibeTime = now;
+
+    let totalTime = pattern.reduce((a, b) => a + b, 0);
+    vibeLevelEl.innerHTML = totalTime + '<span>ms</span>';
+}
 
         function updateUI(bass, level, vibeIntensity) {
             // Update values
