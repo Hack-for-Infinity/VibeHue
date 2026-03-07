@@ -139,13 +139,6 @@ Through synchronized vibrations and colour changes, Haptix enables users to **ex
 
 ```bash
 git clone <repo-url>
-cd haptix
+cd <project-folder>
+# add your setup/run commands here
 ```
-
-1. Open the project folder.
-2. Launch the application by opening `index.html` in a browser (Chrome recommended).
-3. Allow **microphone access** when prompted.
-4. Play music near the device or speak into the microphone.
-5. The application will analyze the audio and respond with **real-time colour changes and vibrations**.
-
----
