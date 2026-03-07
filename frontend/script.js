@@ -10,21 +10,42 @@ document.addEventListener('DOMContentLoaded', () => {
         // Basic Audio validation
         if (['audio/mpeg', 'audio/wav', 'audio/ogg'].includes(file.type) || file.name.match(/\.(mp3|wav|ogg)$/i)) {
           fileNameDisplay.textContent = `Selected: ${file.name}`;
-          fileNameDisplay.style.color = '#38bdf8'; // Restore normal color
+          fileNameDisplay.style.color = '#38bdf8';
           
-          // Temporarily store file info in sessionStorage to simulate state transport
-          sessionStorage.setItem('pendingAudioFile', file.name);
+          // Create a FileReader to read the audio file
+          const reader = new FileReader();
           
-          // Visual feedback before redirecting
-          dropZone.style.borderColor = '#c77dff';
-          dropZone.style.background = 'rgba(199, 125, 255, 0.2)';
+          reader.onload = (e) => {
+            // Store the audio data in sessionStorage
+            // For larger files, we need to be careful about storage limits
+            // Base64 encode the audio data
+            const audioData = e.target.result;
+            
+            // Store metadata along with the data
+            const audioFileData = {
+              name: file.name,
+              type: file.type,
+              data: audioData,
+              size: file.size
+            };
+            
+            sessionStorage.setItem('uploadedAudio', JSON.stringify(audioFileData));
+            
+            // Visual feedback before redirecting
+            dropZone.style.borderColor = '#c77dff';
+            dropZone.style.background = 'rgba(199, 125, 255, 0.2)';
+            
+            setTimeout(() => {
+              window.location.href = 'beatboxComponent2.html';
+            }, 800);
+          };
           
-          setTimeout(() => {
-            window.location.href = 'visualizer.html';
-          }, 800);
+          // Read the file as Data URL (base64)
+          reader.readAsDataURL(file);
+          
         } else {
           fileNameDisplay.textContent = 'Invalid file type. Please select MP3, WAV, or OGG.';
-          fileNameDisplay.style.color = '#ef4444'; // Red error
+          fileNameDisplay.style.color = '#ef4444';
         }
       }
     };
@@ -73,7 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Subtle Button Animation
         liveRecBtn.style.transform = 'scale(0.95)';
         setTimeout(() => {
-          window.location.href = 'live.html';
+          window.location.href = 'beatboxComponent.html?mode=live';
         }, 300);
       });
     }
