@@ -138,7 +138,6 @@ Through synchronized vibrations and colour changes, Haptix enables users to **ex
 ## 🚀 How to Run
 
 ```bash
-git clone <repo-url>
-cd <project-folder>
-# add your setup/run commands here
+git clone https://github.com/Hack-for-Infinity/VibeHue.git
+cd VibeHue
 ```
